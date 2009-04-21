@@ -3,7 +3,7 @@ package Chess::Play;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.03';
 
 use constant IL => 99;
 use constant EM => 0;
@@ -1007,7 +1007,7 @@ sub static_eval {
 			$delta += ( $self->{PIECE_VAL}{$piece} * sign($piece) );
 		}
 	}
-	return $delta+rand();
+	return $delta;
 }
 
 sub evaluate {
@@ -1077,6 +1077,9 @@ sub alphabeta_search {
 			my $saved_rule_50_moves = $self->{RULE_50_MOVES};
 			my $saved_color_to_move = $self->{COLOR_TO_MOVE};
 
+			#shuffle @legal_moves array
+			fisher_yates_shuffle(\@legal_moves) if ($depth == $self->{DEPTH});
+
 			foreach my $move(@legal_moves) {
 				$self->execute_move($move);
 
@@ -1122,6 +1125,9 @@ sub alphabeta_search {
 			my %saved_under_check = %{ $self->{UNDER_CHECK} };
 			my $saved_rule_50_moves = $self->{RULE_50_MOVES};
 			my $saved_color_to_move = $self->{COLOR_TO_MOVE};
+
+			#shuffle @legal_moves array
+			fisher_yates_shuffle(\@legal_moves) if ($depth == $self->{DEPTH});
 
 			foreach my $move(@legal_moves) {
 				$self->execute_move($move);
@@ -1401,6 +1407,15 @@ sub print_board_debug {
 			print "$str ";
 		}
 		print "\n";
+	}
+}
+
+sub fisher_yates_shuffle {
+	my $array = shift;
+	my $i = @$array;
+	while ( --$i ) {
+		my $j = int rand($i+1);
+		@$array[$i,$j] = @$array[$j,$i];
 	}
 }
 

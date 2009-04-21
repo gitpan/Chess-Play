@@ -8,3 +8,5 @@ Revision history for Perl extension Chess::Play.
 	- Modified License Information
 	- do_move() return the best move in coordinate notation
 
+0.03
+	- added a shuffle function to make the move choice less deterministic
