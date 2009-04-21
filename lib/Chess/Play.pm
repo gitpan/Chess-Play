@@ -197,7 +197,7 @@ sub best_move {
 		$evaluation = $self->alphabeta_search($self->{DEPTH}, -(AB_CNST), AB_CNST, -$self->{COLOR_TO_MOVE}, \$bestmove);
 	}
 
-	return $bestmove;
+	return move_to_coord($bestmove);
 }
 
 sub play {
@@ -1256,10 +1256,9 @@ sub play_one_game {
 			}
 			else {
 				$bestmove = $self->best_move();
-				$self->execute_move($bestmove);
-				
-				my $s_move = move_to_coord($bestmove);
-				print "$s_move\n";
+				$self->execute_move(coord_to_move($bestmove));
+
+				print "$bestmove\n";
 			}
 
 			# read user's move
@@ -1293,10 +1292,9 @@ sub play_one_game {
 			}
 			else {
 				$bestmove = $self->best_move();
-				$self->execute_move($bestmove);
-				
-				my $s_move = move_to_coord($bestmove);
-				print "$s_move\n";
+				$self->execute_move(coord_to_move($bestmove));
+
+				print "$bestmove\n";
 			}
 		}
 	}
@@ -1470,13 +1468,13 @@ Tell if the game is over (Sheckmate, Stalemate, Insufficient Material, 50 moves 
 
 Return the best move according to the search algorithm
 
-= item * $cp->play()
+=item * $cp->play()
 
 Play a chess game using STDIN
 
-= item * $cp->xboard_play()
+=item * $cp->xboard_play()
 
-= item * $cp->xboard_play($custom_name)
+=item * $cp->xboard_play($custom_name)
 
 Play a chess game using xboard (only the basic xboad directives are supported). You can choose a name for your engine.
 
