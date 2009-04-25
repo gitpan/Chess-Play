@@ -3,7 +3,7 @@ package Chess::Play;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use constant IL => 99;
 use constant EM => 0;
@@ -46,7 +46,7 @@ sub new {
 
 	$self->{BOARD} = [];
 	$self->{LAST_DOUBLE_MOVE} = [];
-	$self->{MOVED} = {};
+	$self->{CASTLE_OK} = {};
 	$self->{UNDER_CHECK} = {};
 	$self->{RULE_50_MOVES} = undef;
 	$self->{PIECE_VAL} = {};
@@ -75,13 +75,11 @@ sub reset {
 
 	$self->{LAST_DOUBLE_MOVE} = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
 
-	$self->{MOVED} = {
-		W_LR => 0,	# white left rook
-		W_RR => 0,	# white right rook
-		W_K => 0,	# white king
-		B_LR => 0,	# black left rook
-		B_RR => 0,	# black right rook
-		B_K => 0,	# black king
+	$self->{CASTLE_OK} = {
+		E1G1 => 1,
+		E1C1 => 1,
+		E8G8 => 1,
+		E8C8 => 1,
 	};
 
 	$self->{UNDER_CHECK} = {
@@ -658,12 +656,11 @@ sub king_mvs {
 	}
 
 	# castle_code
-	if ($val > 0) {					# white king
-		return @king_mv if ($self->{MOVED}{W_K});	# white king moved
-		return @king_mv if ($self->{UNDER_CHECK}{W_K});	# white king under chack
+	if ($val > 0) {							# white king
+		return @king_mv if ($self->{UNDER_CHECK}{W_K});		# white king under chack
 
 		# short castle
-		if ( (not $self->{MOVED}{W_RR}) and			# white right rook NOT moved
+		if ( ($self->{CASTLE_OK}{E1G1}) and
 		     ($self->{BOARD}[33] == WR) and			# white right rook NOT captured
 		     ($self->{BOARD}[31] == EM) and			# f1 empty
 		     ($self->{BOARD}[32] == EM) ) {			# g1 empty
@@ -671,7 +668,7 @@ sub king_mvs {
 			push @king_mv, "$orig_square $dest_square";
 		}
 		# long castle
-		if ( (not $self->{MOVED}{W_LR}) and			# white left rook NOT moved
+		if ( ($self->{CASTLE_OK}{E1C1}) and
 		     ($self->{BOARD}[26] == WR) and			# white left rook NOT captured
 		     ($self->{BOARD}[29] == EM) and			# d1 empty
 		     ($self->{BOARD}[28] == EM) and			# c1 empty
@@ -680,11 +677,10 @@ sub king_mvs {
 			push @king_mv, "$orig_square $dest_square";
 		}
 	}
-	else {							# black king
-		return @king_mv if ($self->{MOVED}{B_K});		# black king moved
+	else {								# black king
 		return @king_mv if ($self->{UNDER_CHECK}{B_K});		# black king under chack
 		# short castle
-		if ( (not $self->{MOVED}{B_RR}) and			# black right rook NOT moved
+		if ( ($self->{CASTLE_OK}{E8G8}) and
 		     ($self->{BOARD}[117] == BR) and			# black right rook NOT captured
 		     ($self->{BOARD}[115] == EM) and			# f8 empty
 		     ($self->{BOARD}[116] == EM) ) {			# g8 empty
@@ -693,7 +689,7 @@ sub king_mvs {
 		}
 
 		# long castle
-		if ( (not $self->{MOVED}{B_LR}) and			# black left rook NOT moved
+		if ( ($self->{CASTLE_OK}{E8C8}) and
 		     ($self->{BOARD}[110] == BR) and			# black left rook NOT captured
 		     ($self->{BOARD}[113] == EM) and			# d8 empty
 		     ($self->{BOARD}[112] == EM) and			# c8 empty
@@ -830,7 +826,8 @@ sub execute_move {
 
 	#castle
 	if ($moving_piece == WK) {
-		$self->{MOVED}{W_K} = 1;
+		$self->{CASTLE_OK}{E1G1} = 0;
+		$self->{CASTLE_OK}{E1C1} = 0;
 		if ( ($dest_square - $orig_square) == 2 ) {
 			$self->{BOARD}[33] = EM;
 			$self->{BOARD}[31] = WR;
@@ -841,7 +838,8 @@ sub execute_move {
 		}
 	}
 	elsif ($moving_piece == BK) {
-		$self->{MOVED}{B_K} = 1;
+		$self->{CASTLE_OK}{E8G8} = 0;
+		$self->{CASTLE_OK}{E8C8} = 0;
 		if ( ($dest_square - $orig_square) == 2 ) {
 			$self->{BOARD}[117] = EM;
 			$self->{BOARD}[115] = BR;
@@ -908,11 +906,33 @@ sub execute_move {
 		}
 	}
 
-	# Rooks' flags
-	$self->{MOVED}{W_RR} = 1 if ( ($moving_piece == WR) and ($orig_square == 33) );
-	$self->{MOVED}{W_LR} = 1 if ( ($moving_piece == WR) and ($orig_square == 26) );
-	$self->{MOVED}{B_RR} = 1 if ( ($moving_piece == WR) and ($orig_square == 117) );
-	$self->{MOVED}{B_LR} = 1 if ( ($moving_piece == WR) and ($orig_square == 110) );
+	# Rooks moved => castle impossible
+	if ( ($moving_piece == WR) and ($orig_square == 33) ) {
+		$self->{CASTLE_OK}{E1G1} = 0;
+	}
+	elsif ( ($moving_piece == WR) and ($orig_square == 26) ) {
+		$self->{CASTLE_OK}{E1C1} = 0;
+	}
+	elsif ( ($moving_piece == BR) and ($orig_square == 117) ) {
+		$self->{CASTLE_OK}{E8G8} = 0;
+	}
+	elsif ( ($moving_piece == BR) and ($orig_square == 110) ) {
+		$self->{CASTLE_OK}{E8G8} = 0;
+	}
+
+	# Capture in (a1, h1, a8, h8)  => castle impossible
+	if ($dest_square == 33) {			# h1
+		$self->{CASTLE_OK}{E1G1} = 0;
+	}
+	elsif ($dest_square == 26) {			# a1
+		$self->{CASTLE_OK}{E1C1} = 0;
+	}
+	elsif ($dest_square == 117) {			# h8
+		$self->{CASTLE_OK}{E8G8} = 0;
+	}
+	elsif ($dest_square == 110) {			# a8
+		$self->{CASTLE_OK}{E8C8} = 0;
+	}
 
 	$self->{BOARD}[$orig_square] = EM;
 	$self->{BOARD}[$dest_square] = $moving_piece if (not $promotion);
@@ -968,7 +988,7 @@ sub test_legality {
 	# save context
 	my @saved_board = @{ $self->{BOARD} };
 	my @saved_last_double_move = @{ $self->{LAST_DOUBLE_MOVE} };
-	my %saved_moved = %{ $self->{MOVED} };
+	my %saved_castle_ok = %{ $self->{CASTLE_OK} };
 	my %saved_under_check = %{ $self->{UNDER_CHECK} };
 	my $saved_rule_50_moves = $self->{RULE_50_MOVES};
 	my $saved_color_to_move = $self->{COLOR_TO_MOVE};
@@ -984,7 +1004,7 @@ sub test_legality {
 	# restore context
 	@{ $self->{BOARD} } = @saved_board;
 	@{ $self->{LAST_DOUBLE_MOVE} } = @saved_last_double_move;
-	%{ $self->{MOVED} } = %saved_moved;
+	%{ $self->{CASTLE_OK} } = %saved_castle_ok;
 	%{ $self->{UNDER_CHECK} } = %saved_under_check;
 	$self->{RULE_50_MOVES} = $saved_rule_50_moves;
 	$self->{COLOR_TO_MOVE} = $saved_color_to_move;
@@ -1072,7 +1092,7 @@ sub alphabeta_search {
 			#BACKUP STATE
 			my @saved_board = @{ $self->{BOARD} };
 			my @saved_last_double_move = @{ $self->{LAST_DOUBLE_MOVE} };
-			my %saved_moved = %{ $self->{MOVED} };
+			my %saved_castle_ok = %{ $self->{CASTLE_OK} };
 			my %saved_under_check = %{ $self->{UNDER_CHECK} };
 			my $saved_rule_50_moves = $self->{RULE_50_MOVES};
 			my $saved_color_to_move = $self->{COLOR_TO_MOVE};
@@ -1088,7 +1108,7 @@ sub alphabeta_search {
 				#RESTORE STATE
 				@{ $self->{BOARD} } = @saved_board;
 				@{ $self->{LAST_DOUBLE_MOVE} } = @saved_last_double_move;
-				%{ $self->{MOVED} } = %saved_moved;
+				%{ $self->{CASTLE_OK} } = %saved_castle_ok;
 				%{ $self->{UNDER_CHECK} } = %saved_under_check;
 				$self->{RULE_50_MOVES} = $saved_rule_50_moves;
 				$self->{COLOR_TO_MOVE} = $saved_color_to_move;
@@ -1121,7 +1141,7 @@ sub alphabeta_search {
 			#BACKUP STATE
 			my @saved_board = @{ $self->{BOARD} };
 			my @saved_last_double_move = @{ $self->{LAST_DOUBLE_MOVE} };
-			my %saved_moved = %{ $self->{MOVED} };
+			my %saved_castle_ok = %{ $self->{CASTLE_OK} };
 			my %saved_under_check = %{ $self->{UNDER_CHECK} };
 			my $saved_rule_50_moves = $self->{RULE_50_MOVES};
 			my $saved_color_to_move = $self->{COLOR_TO_MOVE};
@@ -1136,7 +1156,7 @@ sub alphabeta_search {
 				#RESTORE STATE
 				@{ $self->{BOARD} } = @saved_board;
 				@{ $self->{LAST_DOUBLE_MOVE} } = @saved_last_double_move;
-				%{ $self->{MOVED} } = %saved_moved;
+				%{ $self->{CASTLE_OK} } = %saved_castle_ok;
 				%{ $self->{UNDER_CHECK} } = %saved_under_check;
 				$self->{RULE_50_MOVES} = $saved_rule_50_moves;
 				$self->{COLOR_TO_MOVE} = $saved_color_to_move;
@@ -1437,8 +1457,9 @@ Chess::Play - Play chess games, calculate legal moves, use a search algorithm
   $cp->set_depth($depth)
   $cp->legal_moves()
   $cp->do_move($move)
-  $cp->game_over()
   $cp->best_move()
+  $cp->game_over();
+  $cp->print_board();
   $cp->play()
   $cp->xboard_play([$custom_name])
 
@@ -1467,21 +1488,25 @@ Change default values for pieces (the defaults are : 1, 3, 3, 5, 9)
 
 Set the depth of the search algorithm (Alpha-Beta search).
 
-=item * $cp->legal_moves()
+=item * @legal_moves = $cp->legal_moves()
 
 Calculate the list of legal moves
 
-=item * $cp->do_move($move)
+=item * $move_ok = $cp->do_move($move)
 
-execute a move (for instance "e2e4" or "a7a8q")
+execute a move (for instance "e2e4" or "a7a8q"). Return 1 if the move is legal, -1 if invalid, -2 if illegal
 
-=item * $cp->game_over()
+=item * $game_over = $cp->game_over()
 
-Tell if the game is over (Sheckmate, Stalemate, Insufficient Material, 50 moves rule). Threeway repetition is not supported in this version.
+Tell if the game is over (Sheckmate, Stalemate, Insufficient Material, 50 moves rule). Threeway repetition is not supported in this version. Return "" if the game is not over.
 
-=item * $cp->best_move()
+=item * $best_move = $cp->best_move()
 
 Return the best move according to the search algorithm
+
+=item * $cp->print_board();
+
+Print an ASCII representation of the board
 
 =item * $cp->play()
 
@@ -1497,8 +1522,8 @@ Play a chess game using xboard (only the basic xboad directives are supported). 
   my $cp = Chess::Play->new();
 
   Execute some moves
-  $cp->do_move("e2e4");
-  $cp->do_move("e7e5");
+  if ($cp->do_move("e2e4") == 1) {..}
+  if ($cp->do_move("e7e5") == 1) {..}
 
   Calculating legal moves
   my @legal_moves = $cp->legal_moves()

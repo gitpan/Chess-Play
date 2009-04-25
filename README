@@ -1,84 +1,14 @@
 Chess-Play version 0.01
 =======================
 
+DESCRIPTION
 
 Chess::Play - Play chess games, calculate legal moves, use a search algorithm
-
-SYNOPSIS
-
-  use Chess::Play;
-
-  my $cp = Chess::Play->new();
-  $cp->reset();
-  $cp->set_piece_val($p_val, $n_val, $b_val, $r_val, $q_val);
-  $cp->set_depth($depth)
-  $cp->legal_moves()
-  $cp->do_move($move)
-  $cp->game_over()
-  $cp->best_move()
-  $cp->play()
-  $cp->xboard_play([$custom_name])
-
-DESCRIPTION
 
 This module allows to play a chess game using STDIN or the xboard graphical interface.
 Il also can calculate legal moves and uses the Alpha-Beta search algorithm to find the best move.
 
-METHODS
-
-* $cp = Chess::Play->new()
-Create a new object to play chess.
-
-* $cp->reset()
-Reset to the start position.
-
-* $cp->set_piece_val($p_val, $n_val, $b_val, $r_val, $q_val)
-Change default values for pieces (the defaults are : 1, 3, 3, 5, 9)
-
-* $cp->set_depth($depth)
-Set the depth of the search algorithm (Alpha-Beta search).
-
-* $cp->legal_moves()
-Calculate the list of legal moves
-
-* $cp->do_move($move)
-execute a move (for instance "e2e4" or "a7a8q")
-
-* $cp->game_over()
-Tell if the game is over (Sheckmate, Stalemate, Insufficient Material, 50 moves rule). Threeway repetition is not supported in this version.
-
-* $cp->best_move()
-Return the best move according to the search algorithm
-
-* $cp->play()
-Play a chess game using STDIN
-
-* $cp->xboard_play()
-* $cp->xboard_play($custom_name)
-
-Play a chess game using xboard (only the basic xboad directives are supported). You can choose a name for your engine.
-
- Examples:
-  my $cp = Chess::Play->new();
-
-  Execute some moves
-  $cp->do_move("e2e4");
-  $cp->do_move("e7e5");
-
-  Calculating legal moves
-  my @legal_moves = $cp->legal_moves()
-
-  Play a chess game using stdin
-  $cp->reset();
-  $ce->set_depth(2);
-  $ce->play();
-
-  Play a chess game using xboard
-  $cp->reset();
-  $ce->set_depth(2);
-  $cp->xboard_play("My_Chess_Engine")
-
-  xboard -fcp /path/to/my_engine.pl or xboard -fcp /path/to/my_engine.pl -scp /path/to/my_engine2.pl
+Please use perldoc for the documentation of the API.
 
 AUTHOR
 
